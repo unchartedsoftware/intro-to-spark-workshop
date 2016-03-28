@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="en">
+
+	<head>
+		<meta charset="utf-8">
+
+		<title>Introducing Apache Spark</title>
+
+		<meta name="description" content="Introducing fundamental Apache Spark concepts through diagrams, examples and use cases.">
+		<meta name="author" content="Sean McIntyre">
+
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
+
+		<link rel="stylesheet" href="css/reveal.css">
+		<link rel="stylesheet" href="css/theme/black.css" id="theme">
+
+		<!-- Code syntax highlighting -->
+		<link rel="stylesheet" href="lib/css/zenburn.css">
+
+		<!-- Custom styles -->
+		<link rel="stylesheet" href="css/custom.css">
+
+		<!-- Printing and PDF exports -->
+		<script>
+			var link = document.createElement( 'link' );
+			link.rel = 'stylesheet';
+			link.type = 'text/css';
+			link.href = window.location.search.match( /print-pdf/gi ) ? 'css/print/pdf.css' : 'css/print/paper.css';
+			document.getElementsByTagName( 'head' )[0].appendChild( link );
+		</script>
+
+		<!--[if lt IE 9]>
+		<script src="lib/js/html5shiv.js"></script>
+		<![endif]-->
+	</head>
+
+	<body>
+
+		<div class="reveal">
+
+			<!-- Any section element inside of this container is displayed as a slide -->
+			<div class="slides">
+				<section data-transition="convex">
+					<h1>Intro to<br/>
+							Apache Spark</h1>
+					<p>Distributed, in-memory computing for data processing</p>
+				</section>
+
+				<!--BEGIN: What is it?-->
+				<section>
+					<section>
+						<h2>What is it?</h2>
+					</section>
+					<section>
+						<ul>
+							<li>
+								General-purpose cluster computing* framework and runtime
+								<br/><small class="fragment"><em>A <strong>framework</strong> is a library. A <strong>runtime</strong> is a thing that runs your code.</em></small>
+								<br/><small class="fragment"><em>More on this in a second.</em></small>
+							</li>
+							<li class="fragment">Supports multiple languages (Scala, Python, Java, R)</li>
+							<li class="fragment">Smart enough to do <em>some</em> optimization of your queries/transformations</li>
+							<li class="fragment">Has higher-level libraries which are more domain-specific (Spark SQL, Spark Streaming, MLlib, GraphX)</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Cluster Computing?</h3>
+						<ul>
+							<li class="fragment">Cluster computing is a broad term for dividing work between multiple computers</li>
+							<li class="fragment">Each <strong>worker</strong> machine finishes a piece of a problem, then has their partial results combined on a <strong>master</strong> machine</li>
+							<li class="fragment">Spark is <em>"general-purpose"</em>. This <strong>doesn't mean it does everything well</strong>. It means it isn't dedicated to one domain or use case.</li>
+						</ul>
+					</section>
+				</section>
+				<!--END: What is it?-->
+
+				<!--BEGIN: How does it work?-->
+				<section>
+					<section>
+						<h2>How does it work?</h2>
+						<p class="fragment">
+							Data -> Distributed Data -> Distributed Execution -> Collect
+						</p>
+					</section>
+					<section>
+						<h3>Step 1: Data</h3>
+						<p class="fragment">Spark supports retrieving data from a variety of sources:</p>
+						<ul class="fragment">
+							<li>Filesystem</li>
+							<li>HDFS</li>
+							<li>Cassandra</li>
+							<li>Amazon S3</li>
+							<li>Relational Databases (JDBC)</li>
+							<li>etc...</li>
+						</ul>
+					</section>
+					<section>
+						<h3>Step 2: Distributed Data</h3>
+						<p class="fragment">With the exception of HDFS, these data sources do not represented <strong>distributed</strong> data. Dividing data between <strong>workers</strong> is one of the most important things Spark does.</p>
+					</section>
+					<section>
+						<p>Let's look at how Spark deals with a relational database</p>
+						<img src="images/how-it-works/data.png"/>
+					</section>
+					<section>
+						<p>Spark starts by looking at the maximum and minimum primary key and divides that key space into <strong>partitions</strong>.</p>
+						<img src="images/how-it-works/partitions.png"/>
+					</section>
+					<section>
+						<p>Spark then divides the partitions among its worker nodes.</p>
+						<img src="images/how-it-works/workers.png"/>
+					</section>
+					<section>
+						<p>This process isn't magic!</p>
+						<img src="images/how-it-works/skew.png"/>
+						<p>Spark will not account for gaps in your primary key values, so the partitions might not actually be equally sized!<br/>This is called <strong>skew</strong>.</p>
+					</section>
+					<section>
+						<h3>Step 3 &amp; 4: Distributed Execution and Results Collection</h3>
+						<p class="fragment">
+							Spark executes <strong>parallel copies</strong> of your code against each data partition...
+						</p>
+						<ul>
+							<li class="fragment">Shuffling data between worker nodes if it needs to</li>
+							<li class="fragment">Sending results back to the master node at the end of your program (ideally)</li>
+							<li class="fragment">We'll dive into this more when we start writing code</li>
+						</ul>
+					</section>
+				</section>
+				<!--END: How does it work?-->
+
+				<!--BEGIN: When does it suck?-->
+				<section>
+					<section>
+						<h2>When should I use Spark?</h2>
+						<p class="fragment">(and when is it the worst?)</p>
+					</section>
+					<section>
+						<h3>Myth #1</h3>
+						<h4>Spark is <strong>faster</strong> than an RDBMS or other database</h4>
+						<p class="fragment">
+							False! Spark really comes into play when you have so much data that you can't index it.
+						</p>
+						<p class="fragment">
+							If you can, an index will almost* always be faster.
+						</p>
+						<small class="fragment">
+							*Compute-heavy queries may run faster on Spark, but it's still a toss-up given the lack of an index.
+						</small>
+					</section>
+					<section>
+						<h3>Myth #2</h3>
+						<h4>You can do <strong>anything</strong> with Spark</h4>
+						<p class="fragment">
+							Spark really only works well when the algorithm you're writing can easily be distributed.
+						</p>
+						<p class="fragment">
+							 Problems that don't break down into bits which can be solved in parallel are poorly suited for Spark. Code like this will run <strong>slower</strong> on Spark than it would on a single machine!
+						</p>
+					</section>
+					<section>
+						<h3>Myth #3</h3>
+						<h4>Spark Scala, Java, Python and R are equally fast</h4>
+						<p class="fragment">
+							This is far less true than the Spark docs claim.
+						</p>
+						<p class="fragment">
+							I'll explain why later this evening...
+						</p>
+					</section>
+				</section>
+				<!--END: When does it suck?-->
+
+				<!-- BEGIN spark fundamental tools -->
+				<section>
+					<section>
+						<h2>Let's make something!</h2>
+					</section>
+
+					<section>
+						<h3>Fundamental: spark-shell</h3>
+						<pre class="presentation-code fragment">
+							<code class="bash" data-trim>
+							// TODO: code block explaining how to start spark-shell with --packages
+							</code>
+						</pre>
+					</section>
+
+					<section>
+						<p>
+							TODO: Break down spark-shell command into constituent parts. Cover the --packages flag.
+						</p>
+					</section>
+
+					<section>
+						<h3>Fundamental: Spark SQL</h3>
+						<p class="fragment">
+							TODO: explain code advantages of SQL API. Simple for previous SQL users.
+						</p>
+						<p class="fragment">
+							TODO: explain Tungsten briefly. This is the future of Spark.
+						</p>
+					</section>
+				</section>
+				<!-- END spark fundamental tools -->
+
+				<!-- BEGIN data ingestion -->
+				<section>
+					<section>
+						<h2>Data Ingestion</h2>
+					</section>
+					<section>
+						TODO code example with taxi-tiny. Dataframe.read()
+					</section>
+					<section>
+						TODO explain schemas
+					</section>
+				</section>
+				<!-- END data ingestion -->
+
+				<!-- BEGIN data querying -->
+				<section>
+					<section>
+						<h2>Querying</h2>
+					</section>
+					<section>
+						TODO simple select
+					</section>
+					<section>
+						TODO simple filter
+					</section>
+					<section>
+						TODO aggregations!
+					</section>
+				</section>
+				<!-- END data querying -->
+
+				<!-- BEGIN data transformation -->
+				<section>
+					<section>
+						<h2>Data Transformation and UDFs</h2>
+					</section>
+					<section>
+						TODO example which leaves the Dataframe world accidentally. BAD! .map, .reduce, etc.
+					</section>
+					<section>
+						TODO example of udfs (add column)
+					</section>
+					<section>
+						TODO Datasets (1.6+) should make this a lot harder to screw up in the future.
+					</section>
+				</section>
+				<!-- END data transformation -->
+
+				<!-- BEGIN export -->
+				<section>
+					<section>
+						<h2>Advanced Querying and UDFs</h2>
+					</section>
+					<section>
+						TODO code example with taxi-tiny. Dataframe.write()
+					</section>
+				</section>
+				<!-- END export -->
+
+				<!-- BEGIN export -->
+				<section>
+					<section>
+						<h2>What else can I do with Spark?</h2>
+					</section>
+					<section>
+						Sparkpipe
+					</section>
+					<section>
+						Salt
+					</section>
+				</section>
+				<!-- END export -->
+			</div>
+		</div>
+
+		<script src="lib/js/head.min.js"></script>
+		<script src="js/reveal.js"></script>
+
+		<script>
+
+			// Full list of configuration options available at:
+			// https://github.com/hakimel/reveal.js#configuration
+			Reveal.initialize({
+				controls: true,
+				progress: true,
+				history: true,
+				center: true,
+
+				transition: 'slide', // none/fade/slide/convex/concave/zoom
+
+				// Optional reveal.js plugins
+				dependencies: [
+					{ src: 'lib/js/classList.js', condition: function() { return !document.body.classList; } },
+					{ src: 'plugin/markdown/marked.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/markdown/markdown.js', condition: function() { return !!document.querySelector( '[data-markdown]' ); } },
+					{ src: 'plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
+					{ src: 'plugin/zoom-js/zoom.js', async: true },
+					{ src: 'plugin/notes/notes.js', async: true }
+				]
+			});
+
+		</script>
+
+	</body>
+</html>

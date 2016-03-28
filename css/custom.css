@@ -1,0 +1,9 @@
+strong {
+  color: rgb(95, 197, 215);
+}
+
+.reveal section img {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
