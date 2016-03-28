@@ -293,10 +293,65 @@ scala>
 						<h2>Data Ingestion</h2>
 					</section>
 					<section>
-						TODO code example with taxi-tiny. Dataframe.read()
+						<h3>Definition:</h3>
+						<p>
+							A <strong>Dataframe</strong> is a wrapper around an <code>RDD</code> which:
+						</p>
+						<ul>
+							<li class="fragment">Represents distributed data as columnar, with schemas and well-defined data types</li>
+							<li class="fragment">Offers a SQL-like API for interacting with that data</li>
+						</ul>
 					</section>
 					<section>
-						TODO explain schemas. show schema.
+						<p>
+							Let's create a <code><strong>Dataframe</strong></code> from taxi_one_day.csv:
+						</p>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+// enter paste mode for multi-line stuff
+scala> :paste
+// modify the path and paste this code into the shell
+val df = sqlContext.read
+  .format("com.databricks.spark.csv")
+  .option("header", "true") // Use first line of all files as header
+  .option("inferSchema", "true") // Automatically infer data types
+  .load("path/to/taxi_one_day.csv") // can also use a directory/*.csv here
+// type the EOF character (CTRL+D) to exit paste mode and interpret
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>
+							Check out the inferred schema:
+						</p>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> df.printSchema
+root
+ |-- hack: string (nullable = true)
+ |-- license: string (nullable = true)
+ |-- code: string (nullable = true)
+ |-- flag: integer (nullable = true)
+ |-- type: string (nullable = true)
+ |-- pickup_time: timestamp (nullable = true)
+ |-- dropoff_time: timestamp (nullable = true)
+ |-- passengers: integer (nullable = true)
+ |-- duration: integer (nullable = true)
+ |-- distance: double (nullable = true)
+ |-- pickup_lon: double (nullable = true)
+ |-- pickup_lat: double (nullable = true)
+ |-- dropoff_lon: string (nullable = true)
+ |-- dropoff_lat: string (nullable = true)
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>
+							<code>spark-csv</code> may not infer the column datatypes correctly. Notice that <code>pickup_lat</code> and <code>pickup_lon</code> are <code>doubles</code>, but their <code>dropoff</code> counterparts are <code>strings</code>.
+						</p>
+						<p class="fragment">
+							This is likely due to the presence of a non-numeric character somewhere in the dataset.
+						</p>
 					</section>
 				</section>
 				<!-- END data ingestion -->
@@ -306,23 +361,72 @@ scala>
 					<section>
 						<h3>Fundamental: Spark SQL</h3>
 						<p class="fragment">
-							TODO: explain code advantages of SQL API. Simple for previous SQL users.
+							<code><strong>Dataframe</strong></code>s are part of Spark SQL, and have been the primary mechanism for interacting with data in Spark for several versions.
 						</p>
 						<p class="fragment">
-							TODO: explain Tungsten briefly. This is the future of Spark.
+							Spark 1.6 introduces a preview of <code><strong>Dataset</strong></code>s, which attempt to combine the benefits of Dataframes and directly using RDDs. We won't cover them today, since they'll be released in full in Spark 2.0 this summer.
+						</p>
+					</section>
+					<section>
+						<p>
+							Code written using <code>Dataframe</code>s is <strong>faster</strong> than code which uses <code>RDD</code>s!.
+						</p>
+						<p>
+							This is because Spark can greatly optimize queries against columnar data, and is capable of doing a lot of the work using basic (unboxed) types rather than boxed types.
 						</p>
 					</section>
 					<section>
 						<h2>Querying</h2>
+						<p>
+							Let's try some simple queries against our data!
+						</p>
 					</section>
 					<section>
-						TODO simple select
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> df.first
+scala> df.show
+scala> df.select($"duration",$"distance").where($"distance" > 15)
+							</code>
+						</pre>
+						<p class="fragment">
+							Notice the last one returns a Dataframe instead of a result! This is because everything in Spark is <strong>lazily evaluated</strong>.
+						</p>
+						<p class="fragment">
+							Calling <a href="http://spark.apache.org/docs/latest/api/scala/index.html#org.apache.spark.sql.functions$">transformations</a> like <code>select()</code> or <code>where()</code> always results in a new Dataframe with an optimized query.
+						</p>
+						<p class="fragment">
+							Nothing gets returned until you actually <code>execute</code> the query by asking for a result via <a href="http://spark.apache.org/docs/latest/programming-guide.html#actions">actions</a> such as <code>first()</code>, <code>take()</code> or <code>collect().</code>
+						</p>
 					</section>
 					<section>
-						TODO simple filter
+						<h3>Common Actions</h3>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> df.select($"duration",$"distance").where($"distance" > 15).first
+scala> df.select($"duration",$"distance").where($"distance" > 15).take(5)
+// you can also use plain strings when you don't need the $ "column syntax"
+scala> df.select("duration","distance").where("distance > 15").show
+scala> df.select("duration","distance").where("distance > 15").collect
+scala> df.select("duration","distance").where("distance > 15").count
+							</code>
+						</pre>
 					</section>
 					<section>
-						TODO aggregations!
+						<h3>Common Transformations</h3>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> df.select("duration","distance").show
+// fix datatype on dropoff_lon
+scala> df.selectExpr("cast(dropoff_lon as double) as longitude").show
+scala> df.filter($"distance" > 15).show // same as where()
+scala> df.limit(100).show
+scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).show
+							</code>
+						</pre>
+					</section>
+					<section>
+						<h1>Go nuts!</h1>
 					</section>
 				</section>
 				<!-- END data querying -->
@@ -331,6 +435,9 @@ scala>
 				<section>
 					<section>
 						<h2>Data Transformation and UDFs</h2>
+					</section>
+					<section>
+						TODO fix dropoff column data type
 					</section>
 					<section>
 						TODO example which leaves the Dataframe world accidentally. BAD! .map, .reduce, etc.

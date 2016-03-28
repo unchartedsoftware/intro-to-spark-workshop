@@ -12,3 +12,9 @@ strong {
   box-shadow: none !important;
   tab-size: 2 !important;
 }
+
+.reveal pre {
+  margin:0;
+  margin-top: 10px;
+  width: 100%;
+}
