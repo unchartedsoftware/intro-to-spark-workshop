@@ -7,3 +7,8 @@ strong {
   background: none;
   box-shadow: none;
 }
+
+.presentation-code {
+  box-shadow: none !important;
+  tab-size: 2 !important;
+}
