@@ -1,14 +1,12 @@
-# Aurelia Presentation
-
-Slides for Uncharted Aurelia lunch and learn presentation.
+# Intro to Spark Workshop
 
 ## Develop
 
 Make sure [Node.js](https://nodejs.org/en/) is installed and global grunt `npm install -g grunt-cli`.
 
 ```shell
-git clone git@github.com:danielabar/aurelia-presentation.git
-cd aurelia-presentation
+git clone git@github.com:unchartedsoftware/intro-to-spark-workshop.git
+cd intro-to-spark-workshop
 npm install
 grunt serve
 ```
@@ -28,8 +26,6 @@ git add .
 git commit -m "description of whatever you changed"
 git push
 ```
-
-Verify at [http://danielabar.github.io/aurelia-presentation](http://danielabar.github.io/aurelia-presentation)
 
 ## reveal.js
 
