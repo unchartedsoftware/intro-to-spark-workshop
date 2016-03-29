@@ -421,7 +421,11 @@ scala> df.select("duration","distance").show
 scala> df.selectExpr("cast(dropoff_lon as double) as longitude").show
 scala> df.filter($"distance" > 15).show // same as where()
 scala> df.limit(100).show
-scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).show
+scala> :paste
+df.groupBy("hack")
+  .agg(max("distance"))
+	.orderBy($"max(distance)".desc)
+	.show
 							</code>
 						</pre>
 						<p class="fragment">
@@ -541,9 +545,92 @@ df.filter("distance > 40")
   .save("output/taxi_parquet")
 							</code>
 						</pre>
+						<p class="fragment">
+							You should now have a nested directory <code>output/taxi_parquet</code>, with several partitioned files inside <code>taxi_parquet</code>.
+						</p>
 					</section>
 				</section>
 				<!-- END export -->
+
+				<!-- BEGIN final problem -->
+				<section>
+					<section>
+						<h1>Exercise</h1>
+						<span class="fragment">a.k.a Beyond Spark SQL</span>
+					</section>
+					<section>
+						<p>
+							So far I've shown you how you can tackle SQL-like problems with Spark. But Spark is good for a great deal more than that.
+						</p>
+					</section>
+					<section>
+						<p>Let's look at something a bit less numeric. Here's a sample of some data we've been collecting; tweets from Twitter concerning Donald Trump:</p>
+						<pre class="presentation-code">
+							<code class="bash" data-trim>
+$ curl -O http://assets.oculusinfo.com/salt/sample-data/trump_20160206.json.gz
+							</code>
+						</pre>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> :paste
+val trump = sqlContext.read
+										  .format("json")
+										  .load("trump_20160206.json.gz")
+							</code>
+						</pre>
+					</section>
+					<section>
+						<p>
+							Try the following:
+						</p>
+						<ul>
+							<li>Find the most-retweeted tweet</li>
+							<li>Filter for tweets which <em>are</em> retweets</li>
+							<li>Find the most-retweeted tweet which doesn't itself appear in the dataset</li>
+							<li>Other ideas?</li>
+						</ul>
+						<p class="fragment">
+							How would you tackle this:
+						</p>
+						<ul class="fragment">
+							<li>Find the most frequently-used word in the tweet text, across the entire dataset</li>
+						</ul>
+					</section>
+					<section>
+						<p>
+							This is where advanced Spark topics come in:
+						</p>
+						<ul>
+							<li>RDD API</li>
+							<li>Map/reduce</li>
+							<li>Accumulators</li>
+							<li>etc.</li>
+						</ul>
+						<p class="fragment">
+							But we'll have to save those for another day.
+						</p>
+					</section>
+					<section>
+						<p>
+							Find the most frequently-used word in the tweet text, across the entire dataset
+						</p>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> :paste
+trump
+.select("text")
+.limit(1000) // drop this line if you're not in a rush
+.flatMap(t => t.getString(0).split(" "))
+.map(w => (w, 1))
+.foldByKey(0)((l, r) => l+r)
+.sortBy(w => w._2, false)
+.take(10)
+							</code>
+						</pre>
+
+					</section>
+				</section>
+				<!-- END final problem -->
 
 				<!-- BEGIN demos -->
 				<section>
