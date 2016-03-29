@@ -573,9 +573,7 @@ $ curl -O http://assets.oculusinfo.com/salt/sample-data/trump_20160206.json.gz
 						<pre class="presentation-code">
 							<code class="scala" data-trim>
 scala> :paste
-val trump = sqlContext.read
-										  .format("json")
-										  .load("trump_20160206.json.gz")
+val trump = sqlContext.read.format("json").load("trump_20160206.json.gz")
 							</code>
 						</pre>
 					</section>
