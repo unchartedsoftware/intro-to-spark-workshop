@@ -618,7 +618,7 @@ scala> :paste
 trump
 .select("text")
 .limit(1000) // drop this line if you're not in a rush
-.flatMap(t => t.getString(0).split(" "))
+.flatMap(t => t.getString(0).trim.split("\\s+?"))
 .map(w => (w, 1))
 .foldByKey(0)((l, r) => l+r)
 .sortBy(w => w._2, false)
