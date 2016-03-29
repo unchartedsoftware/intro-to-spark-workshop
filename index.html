@@ -424,6 +424,9 @@ scala> df.limit(100).show
 scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).show
 							</code>
 						</pre>
+						<p class="fragment">
+							Side note: this works the same way on parquet, json, etc. Nested objects can be accessed via dot notation: <code>df.select("person.name.first")</code>
+						</p>
 					</section>
 					<section>
 						<h1>Go nuts!</h1>
@@ -434,19 +437,56 @@ scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).sh
 				<!-- BEGIN data transformation -->
 				<section>
 					<section>
-						<h2>Data Transformation and UDFs</h2>
+						<h2>Advanced Spark</h2>
 					</section>
 					<section>
-						TODO fix dropoff column data type
+						<p>Since every Dataframe transformation returns a new Dataframe, you can always store it in a variable and query it several times:</p>
+						<pre class="presentation-code">
+							<code class="scala" data-trim>
+scala> :paste
+val df2 = df.select("hack", "duration", "distance")
+            .where("distance > 15")
+scala> :paste
+df2.groupBy("hack")
+   .agg(max("distance"))
+	 .orderBy($"max(distance)".desc)
+	 .show
+							</code>
+						</pre>
 					</section>
 					<section>
-						TODO example which leaves the Dataframe world accidentally. BAD! .map, .reduce, etc.
+						<h3>Caching</h3>
+						<p class="fragment">
+							Every time you use an <strong>action</strong>, Spark goes right back to the source data. This is <strong>slow</strong>!
+						</p>
+						<p class="fragment">
+							We can address this by using the <strong>cache()</strong> transformation on our Dataframe:
+						</p>
+						<pre class="presentation-code fragment">
+							<code class="scala" data-trim>
+scala> val cachedDf = df.cache
+							</code>
+						</pre>
+						<p class="fragment">
+							This is a hint to Spark that it should start keeping partitions in memory for future use.
+						</p>
 					</section>
 					<section>
-						TODO example of udfs (add column)
+						<h3>A brief note about RDDs</h3>
+						<div class="fragment">
+							Dataframes contain several methods such as <code>map()</code>, <code>flatMap()</code>, <code>foreach()</code>, and others which:
+							<ul>
+								<li>Operate directly on the underlying RDD</li>
+								<li>Return an RDD</li>
+							</ul>
+						</div>
+						<p class="fragment">
+							Always use these methods <strong>deliberately</strong> and <strong>conservatively</strong>, as there are potential performance penalties.
+							<small><em>And RDDs have a completely different API :(</em></small>
+						</p>
 					</section>
 					<section>
-						TODO Datasets (1.6+) should make this a lot harder to screw up in the future.
+						Datasets in Spark 2.0 should make this a lot harder to screw up in the future.
 					</section>
 				</section>
 				<!-- END data transformation -->
@@ -454,7 +494,7 @@ scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).sh
 				<!-- BEGIN export -->
 				<section>
 					<section>
-						<h2>Advanced Querying and UDFs</h2>
+						<h2>Data Export</h2>
 					</section>
 					<section>
 						TODO code example with taxi-tiny. Dataframe.write()
@@ -462,7 +502,7 @@ scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).sh
 				</section>
 				<!-- END export -->
 
-				<!-- BEGIN export -->
+				<!-- BEGIN demos -->
 				<section>
 					<section>
 						<h2>What else can I do with Spark?</h2>
@@ -474,7 +514,7 @@ scala> df.groupBy("hack").agg(max("distance")).orderBy($"max(distance)".desc).sh
 						Salt
 					</section>
 				</section>
-				<!-- END export -->
+				<!-- END demos -->
 			</div>
 		</div>
 
